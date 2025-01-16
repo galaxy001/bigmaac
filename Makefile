@@ -21,7 +21,7 @@ BIGMAAC_ENV_FRY      := BIGMAAC_MIN_FRY_SIZE=0 SIZE_FRIES=549755813888
 BIGMAAC_ENV_BIGMAAC  := BIGMAAC_MIN_BIGMAAC_SIZE=314572800 SIZE_BIGMAAC=549755813888
 BIGMAAC_ENV_DEFAULT  := $(BIGMAAC_ENV_TEMPLATE) $(BIGMAAC_ENV_FRY) $(BIGMAAC_ENV_BIGMAAC)
 
-BINARY := bigmaac.so bigmaac_debug.so preload test_bigmaac bigmaac_main bigmaac_main_debug c_test c_app
+BINARY := bigmaac.so bigmaac_debug.so preload test_bigmaac bigmaac_main bigmaac_main_debug c_test c_app c_app_debug
 
 all: $(BINARY)
 
@@ -48,6 +48,9 @@ c_test: c_test.c
 
 c_app: c_test.c bigmaac.c
 	$(CC) $(OFLAGS) -O3 -DNOTCOMPAT $^ -o $@ -lc -g $(LDFLAGS) $(OMPFLAGS)
+
+c_app_debug: c_test.c bigmaac.c
+	$(CC) $(OFLAGS) -O3 -DDEBUG -DNOTCOMPAT $^ -o $@ -lc -g $(LDFLAGS) $(OMPFLAGS)
 
 .PHONY: clean all test fmt run
 
