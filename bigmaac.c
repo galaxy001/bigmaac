@@ -32,9 +32,9 @@
 #endif
 
 #if defined(__clang__)
-#define FORCE_INLINE __attribute__((__always_inline__, __gnu_inline__)) extern inline
+#define FORCE_INLINE __attribute__((__always_inline__, __gnu_inline__)) static inline
 #elif defined(__GNUC__)
-#define FORCE_INLINE __attribute__((__always_inline__)) inline
+#define FORCE_INLINE __attribute__((__always_inline__)) static inline
 #elif defined(_MSC_VER)
 #pragma warning(error : 4714)
 #define FORCE_INLINE __forceinline
