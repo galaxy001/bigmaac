@@ -1,24 +1,45 @@
-all: bigmaac.so bigmaac_debug.so preload test_bigmaac test bigmaac_main bigmaac_main_debug
+CC ?= gcc
+CXX ?= g++
+OFLAGS = -Wall -pthread
+
+OMPFLAGS := -fopenmp
+COMPILER_VERSION := $(shell $(CC) --version)
+ifneq '' '$(findstring clang,$(COMPILER_VERSION))'
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Darwin)
+		OSFLAG += -D OSX
+		OMPFLAGS = -Xclang -fopenmp -lomp -I/usr/local/opt/libomp/include -L/usr/local/opt/libomp/lib
+	endif
+endif
+
+BINARY := bigmaac.so bigmaac_debug.so preload test_bigmaac bigmaac_main bigmaac_main_debug
+
+all: $(BINARY)
 
 bigmaac_main: bigmaac.c bigmaac.h
-	gcc -DMAIN bigmaac.c -o bigmaac_main -Wall -g -ldl -fopenmp
+	$(CC) $(OFLAGS) -DMAIN bigmaac.c -o bigmaac_main -Wall -g -ldl $(OMPFLAGS)
 
 bigmaac_main_debug: bigmaac.c bigmaac.h
-	gcc -DMAIN -DDEBUG bigmaac.c -o bigmaac_main_debug -Wall -g -ldl -fopenmp
+	$(CC) $(OFLAGS) -DMAIN -DDEBUG bigmaac.c -o bigmaac_main_debug -Wall -g -ldl $(OMPFLAGS)
 
 bigmaac.so: bigmaac.c bigmaac.h
-	gcc -shared -fPIC bigmaac.c -o bigmaac.so -ldl -Wall -O3
+	$(CC) $(OFLAGS) -shared -fPIC bigmaac.c -o bigmaac.so -ldl -Wall -O3
 
 bigmaac_debug.so: bigmaac.c bigmaac.h
-	gcc -shared -DDEBUG -fPIC bigmaac.c -o bigmaac_debug.so -ldl -Wall -g
+	$(CC) $(OFLAGS) -shared -DDEBUG -fPIC bigmaac.c -o bigmaac_debug.so -ldl -Wall -g
 
 preload: preload.c
-	gcc -Wall preload.c -o preload 
+	$(CC) -Wall preload.c -o preload
 
 test_bigmaac: test_bigmaac.c bigmaac.h
-	gcc -Wall test_bigmaac.c -o test_bigmaac -g
+	$(CC) -Wall test_bigmaac.c -o test_bigmaac -g
+
+.PHONY: clean all test
 
 test: bigmaac.so test_bigmaac preload
 	./test_bigmaac > output_without_bigmaac
 	./preload ./bigmaac.so ./test_bigmaac > output_with_bigmaac
 
+clean:
+	rm -f $(BINARY) output_with_bigmaac output_without_bigmaac
+	rm -fr *.dSYM
