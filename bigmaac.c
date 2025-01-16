@@ -43,6 +43,13 @@
 #define FORCE_INLINE static inline
 #endif
 
+#if defined(NOTCOMPAT)
+#include "mmap_malloc.h"
+#  define PREFIX(x) mmap_ ## x
+#else
+#  define PREFIX(x) x
+#endif
+
 #define OOM()                                                      \
 	fprintf(stderr, "BigMaac : Failed to find available space\n"); \
 	errno = ENOMEM;
@@ -639,7 +646,7 @@ static int remove_chunk_with_ptr(void* const ptr, void* const new_ptr, const siz
 
 // BigMaac C library memory functions
 
-void* malloc(size_t size) {
+void* PREFIX(malloc)(size_t size) {
 	if (load_state == NOT_LOADED && real_malloc == NULL) {
 		bigmaac_init();
 	}
@@ -660,7 +667,7 @@ void* malloc(size_t size) {
 	return real_malloc(size);
 }
 
-void* calloc(size_t count, size_t size) {
+void* PREFIX(calloc)(size_t count, size_t size) {
 	if (load_state > NOT_LOADED && load_state < LOADED) {
 		return NULL;
 	}
@@ -689,9 +696,9 @@ void* calloc(size_t count, size_t size) {
 	return real_calloc(count, size);
 }
 
-void* reallocarray(void* ptr, size_t size, size_t count) { return realloc(ptr, size * count); }
+void* PREFIX(reallocarray)(void* ptr, size_t size, size_t count) { return PREFIX(realloc)(ptr, size * count); }
 
-void* realloc(void* ptr, size_t size) {
+void* PREFIX(realloc)(void* ptr, size_t size) {
 	if (load_state == NOT_LOADED && real_malloc == NULL) {
 		bigmaac_init();
 	}
@@ -701,7 +708,7 @@ void* realloc(void* ptr, size_t size) {
 	}
 
 	if (ptr == NULL || size == 0) {
-		return malloc(size);
+		return PREFIX(malloc)(size);
 	}
 
 	// currently managed by BigMaac
@@ -767,7 +774,7 @@ void* realloc(void* ptr, size_t size) {
 	return real_realloc(ptr, size);
 }
 
-void free(void* ptr) {
+void PREFIX(free)(void* ptr) {
 	if (load_state == NOT_LOADED && real_malloc == NULL) {
 		bigmaac_init();
 	}
@@ -797,8 +804,8 @@ int** ptrs;
 size_t* sizes;
 
 int main() {
-	ptrs = (int**)calloc(1, sizeof(int*) * T * N);
-	sizes = (size_t*)calloc(1, sizeof(size_t) * T * N);
+	ptrs = (int**)PREFIX(calloc)(1, sizeof(int*) * T * N);
+	sizes = (size_t*)PREFIX(calloc)(1, sizeof(size_t) * T * N);
 	for (int i = 0; i < N * T; i++) {
 		ptrs[i] = NULL;
 		sizes[i] = 0;
@@ -817,9 +824,9 @@ int main() {
 			int x = (r % X) - X / 2;
 			size_t sz = N_size < x ? 3 : N_size - x;
 			if (i % 2 == 0) {
-				ptrs[i + t * N] = (int*)malloc(sz * sizeof(int));
+				ptrs[i + t * N] = (int*)PREFIX(malloc)(sz * sizeof(int));
 			} else {
-				ptrs[i + t * N] = (int*)calloc(1, sz * sizeof(int));
+				ptrs[i + t * N] = (int*)PREFIX(calloc)(1, sz * sizeof(int));
 			}
 			sizes[i + t * N] = sz;
 			for (int j = 0; j < sz; j++) {
@@ -832,12 +839,12 @@ int main() {
 			int k = r % i + t * N;
 			if (ptrs[k] != NULL) {
 				if (k % 2 == 0) {
-					free(ptrs[k]);
+					PREFIX(free)(ptrs[k]);
 					ptrs[k] = NULL;
 					sizes[k] = 0;
 				} else {
 					size_t new_size = sizes[k] < x ? 3 : sizes[k] - x;
-					ptrs[k] = realloc(ptrs[k], new_size * sizeof(int));
+					ptrs[k] = PREFIX(realloc)(ptrs[k], new_size * sizeof(int));
 					for (int j = 0; j < new_size; j++) {
 						ptrs[k][j] = rand();
 					}

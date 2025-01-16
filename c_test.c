@@ -4,6 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#if defined(NOTCOMPAT)
+#include "mmap_malloc.h"
+#  define PREFIX(x) mmap_ ## x
+#else
+#  define PREFIX(x) x
+#endif
+
 #define BATCH_SIZE 8
 #define MALLOC_SIZE_MAX (1024 * 1024 * 256)
 #define BASE_SIZE (1024 * 1024)
@@ -28,7 +35,7 @@ int test() {
 			fprintf(stderr, "  Allocate #%d\n", j);
 			size_t size = rand() % MALLOC_SIZE_MAX + BASE_SIZE;
 			size_list[j] = size;
-			addrs[j] = malloc(size * 4);
+			addrs[j] = PREFIX(malloc)(size * 4);
 			for (int k = 0; k < size; k += 1000) {
 				addrs[j][k] = j + k;
 			}
@@ -41,7 +48,7 @@ int test() {
 			size_t new_size = rand() % MALLOC_SIZE_MAX + BASE_SIZE;
 			size_t old_size = size_list[j];
 			resize_list[j] = new_size;
-			addrs[j] = realloc(addrs[j], new_size * 4);
+			addrs[j] = PREFIX(realloc)(addrs[j], new_size * 4);
 			for (int k = 0; k < new_size; k += 1000) {
 				if (k >= old_size) {
 					addrs[j][k] = j + k;
@@ -62,7 +69,7 @@ int test() {
 					return 1;
 				}
 			}
-			free(addrs[j]);
+			PREFIX(free)(addrs[j]);
 		}
 	}
 
