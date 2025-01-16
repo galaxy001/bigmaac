@@ -15,6 +15,21 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#if TARGET_OS_OSX
+#include <malloc/malloc.h>
+#define MALLOCSIZE malloc_size
+#else
+#error "Unsupported Apple platform"
+#endif
+#elif __linux__
+#include <malloc.h>
+#define MALLOCSIZE malloc_usable_size
+#else
+#error "Unsupported compiler"
+#endif
+
 #define OOM()                                                      \
 	fprintf(stderr, "BigMaac : Failed to find available space\n"); \
 	errno = ENOMEM;
@@ -713,15 +728,12 @@ void* realloc(void* ptr, size_t size) {
 	// currently managed by system
 	// if (size>24570 && size<24577) { //debug pytest
 	if (size > min_size_fry) {
-		void* mallocd_p = real_realloc(ptr, size);  // we have no idea of previous size
-		if (mallocd_p == NULL) {
-			return NULL;  // errno already set
-		}
+		size_t old_size = MALLOCSIZE(ptr);
 
 		void* p = create_chunk(size);
 		if (p != NULL) {
-			memcpy(p, mallocd_p, size);
-			real_free((size_t)mallocd_p);
+			memcpy(p, ptr, size);
+			real_free((size_t)ptr);
 		} else {
 			OOM();
 			return NULL;
@@ -729,6 +741,7 @@ void* realloc(void* ptr, size_t size) {
 		return p;
 	}
 
+	// size <= min_size_fry
 	return real_realloc(ptr, size);
 }
 
