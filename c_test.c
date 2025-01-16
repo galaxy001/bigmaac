@@ -6,9 +6,9 @@
 
 #if defined(NOTCOMPAT)
 #include "mmap_malloc.h"
-#  define PREFIX(x) mmap_ ## x
+#define PREFIX(x) mmap_##x
 #else
-#  define PREFIX(x) x
+#define PREFIX(x) x
 #endif
 
 #define BATCH_SIZE 8
