@@ -1,6 +1,7 @@
 CC ?= gcc
 CXX ?= g++
 OFLAGS = -Wall -pthread
+LDFLAGS = -lc
 
 OMPFLAGS := -fopenmp
 COMPILER_VERSION := $(shell $(CC) --version)
@@ -15,7 +16,7 @@ ifneq '' '$(findstring clang,$(COMPILER_VERSION))'
 	endif
 endif
 
-BINARY := bigmaac.so bigmaac_debug.so preload test_bigmaac bigmaac_main bigmaac_main_debug
+BINARY := bigmaac.so bigmaac_debug.so preload test_bigmaac bigmaac_main bigmaac_main_debug c_test
 
 all: $(BINARY)
 
@@ -37,7 +38,10 @@ preload: preload.c
 test_bigmaac: test_bigmaac.c bigmaac.h
 	$(CC) -Wall test_bigmaac.c -o test_bigmaac -g
 
-.PHONY: clean all test
+c_test: c_test.c
+	$(CC) $(OFLAGS) -O3  $< -o $@ -g $(LDFLAGS) $(OMPFLAGS)
+
+.PHONY: clean all test fmt
 
 test: bigmaac.so test_bigmaac preload
 	./test_bigmaac > output_without_bigmaac
@@ -46,3 +50,6 @@ test: bigmaac.so test_bigmaac preload
 clean:
 	rm -f $(BINARY) output_with_bigmaac output_without_bigmaac
 	rm -fr *.dSYM
+
+fmt:
+	clang-format -i *.c *.h
