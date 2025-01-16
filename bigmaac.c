@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,6 +29,18 @@
 #define MALLOCSIZE malloc_usable_size
 #else
 #error "Unsupported compiler"
+#endif
+
+#if defined(__clang__)
+#define FORCE_INLINE __attribute__((__always_inline__, __gnu_inline__)) extern inline
+#elif defined(__GNUC__)
+#define FORCE_INLINE __attribute__((__always_inline__)) inline
+#elif defined(_MSC_VER)
+#pragma warning(error : 4714)
+#define FORCE_INLINE __forceinline
+#else
+#warning Unsupported compiler, fall back to `static inline`.
+#define FORCE_INLINE static inline
 #endif
 
 #define OOM()                                                      \
@@ -573,6 +586,17 @@ static void* create_chunk(size_t size) {
 	return heap_chunk->ptr;
 }
 
+FORCE_INLINE void memblock_copy(void* const old_ptr, void* const new_ptr, const size_t old_size, const size_t new_size, const bool from_heap) {
+	const size_t m = (old_size < new_size) ? old_size : new_size;
+	memcpy(new_ptr, old_ptr, m);
+#ifdef DEBUG
+	if (from_heap)
+		log_bm("realloc Mmap[%p]%zu <--%ld-- Heap[%p]%zu\n", new_ptr, new_size, m, old_ptr, old_size);
+	else
+		log_bm("realloc Mmap[%p]%zu <--%ld-- Mmap[%p]%zu\n", new_ptr, new_size, m, old_ptr, old_size);
+#endif
+}
+
 static int remove_chunk_with_ptr(void* const ptr, void* const new_ptr, const size_t new_size) {
 	pthread_mutex_lock(&lock);
 
@@ -584,10 +608,7 @@ static int remove_chunk_with_ptr(void* const ptr, void* const new_ptr, const siz
 	}
 
 	if (new_ptr != NULL) {
-		const size_t m = ((n->size) < new_size) ? n->size : new_size;
-		memcpy(new_ptr, n->ptr, m);
-		//log_bm("%p <- %p, %ld\n", new_ptr, n->ptr, m);
-		log_bm("realloc Mmap[%p]%zu <--%ld-- Heap[%p]%zu\n", new_ptr,new_size, m, n->ptr,n->size);
+		memblock_copy(n->ptr, new_ptr, n->size, new_size, false);
 	}
 
 	node* head = ptr < base_bigmaac ? _head_fries : _head_bigmaacs;
@@ -733,10 +754,8 @@ void* realloc(void* ptr, size_t size) {
 
 		void* p = create_chunk(size);
 		if (p != NULL) {
-			const size_t m = (old_size < size) ? old_size : size;
-			memcpy(p, ptr, m);
+			memblock_copy(ptr, p, old_size, size, true);
 			real_free((size_t)ptr);
-			log_bm("realloc Mmap[%p]%zu <--%ld-- Heap[%p]%zu\n", p,size, ptr, m, old_size);
 		} else {
 			OOM();
 			return NULL;
