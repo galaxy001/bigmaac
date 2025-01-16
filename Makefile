@@ -8,7 +8,10 @@ ifneq '' '$(findstring clang,$(COMPILER_VERSION))'
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Darwin)
 		OSFLAG += -D OSX
+		# https://mac.r-project.org/openmp/#do
 		OMPFLAGS = -Xclang -fopenmp -lomp -I/usr/local/opt/libomp/include -L/usr/local/opt/libomp/lib
+		# https://stackoverflow.com/a/60043467
+		# brew install llvm libomp
 	endif
 endif
 
