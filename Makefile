@@ -16,6 +16,11 @@ ifneq '' '$(findstring clang,$(COMPILER_VERSION))'
 	endif
 endif
 
+BIGMAAC_ENV_TEMPLATE := BIGMAAC_TEMPLATE="/tmp/bigmaax.XXXXXXXX"
+BIGMAAC_ENV_FRY      := BIGMAAC_MIN_FRY_SIZE=0 SIZE_FRIES=549755813888
+BIGMAAC_ENV_BIGMAAC  := BIGMAAC_MIN_BIGMAAC_SIZE=314572800 SIZE_BIGMAAC=549755813888
+BIGMAAC_ENV_DEFAULT  := $(BIGMAAC_ENV_TEMPLATE) $(BIGMAAC_ENV_FRY) $(BIGMAAC_ENV_BIGMAAC)
+
 BINARY := bigmaac.so bigmaac_debug.so preload test_bigmaac bigmaac_main bigmaac_main_debug c_test
 
 all: $(BINARY)
@@ -39,13 +44,13 @@ test_bigmaac: test_bigmaac.c bigmaac.h
 	$(CC) -Wall test_bigmaac.c -o test_bigmaac -g
 
 c_test: c_test.c
-	$(CC) $(OFLAGS) -O3  $< -o $@ -g $(LDFLAGS) $(OMPFLAGS)
+	$(CC) $(OFLAGS) -O3  $< -o $@ -lc -g $(LDFLAGS) $(OMPFLAGS)
 
-.PHONY: clean all test fmt
+.PHONY: clean all test fmt run
 
 test: bigmaac.so test_bigmaac preload
 	./test_bigmaac > output_without_bigmaac
-	./preload ./bigmaac.so ./test_bigmaac > output_with_bigmaac
+	$(BIGMAAC_ENV_DEFAULT) ./preload ./bigmaac.so ./test_bigmaac > output_with_bigmaac
 
 clean:
 	rm -f $(BINARY) output_with_bigmaac output_without_bigmaac
@@ -53,3 +58,6 @@ clean:
 
 fmt:
 	clang-format -i *.c *.h
+
+run: c_test
+	 $(BIGMAAC_ENV_DEFAULT) LD_PRELOAD=./bigmaac_debug.so ./c_test
