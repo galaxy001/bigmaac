@@ -1,5 +1,6 @@
 CC ?= gcc
 CXX ?= g++
+CXXFLAGS = -std=gnu++20
 OFLAGS = -Wall -pthread
 LDFLAGS = -lc
 
@@ -21,7 +22,7 @@ BIGMAAC_ENV_FRY      := BIGMAAC_MIN_FRY_SIZE=0 SIZE_FRIES=549755813888
 BIGMAAC_ENV_BIGMAAC  := BIGMAAC_MIN_BIGMAAC_SIZE=314572800 SIZE_BIGMAAC=549755813888
 BIGMAAC_ENV_DEFAULT  := $(BIGMAAC_ENV_TEMPLATE) $(BIGMAAC_ENV_FRY) $(BIGMAAC_ENV_BIGMAAC)
 
-BINARY := bigmaac.so bigmaac_debug.so preload test_bigmaac bigmaac_main bigmaac_main_debug c_test c_app c_app_debug
+BINARY := bigmaac.so bigmaac_debug.so preload test_bigmaac bigmaac_main bigmaac_main_debug c_test c_app c_app_debug cpp_app bigmaac.a
 
 all: $(BINARY)
 
@@ -52,6 +53,14 @@ c_app: c_test.c bigmaac.c
 c_app_debug: c_test.c bigmaac.c
 	$(CC) $(OFLAGS) -O3 -DDEBUG -DNOTCOMPAT $^ -o $@ -lc -g $(LDFLAGS) $(OMPFLAGS)
 
+bigmaac.a: bigmaac.c bigmaac.h
+	$(CC) $(OFLAGS) -shared -fPIC -DNOTCOMPAT -c bigmaac.c -o bigmaac.o -ldl -Wall -O3
+	ar r $@ bigmaac.o
+
+cpp_app: cpp_test.cpp bigmaac.a
+	# bigmaac.o is OK, too.
+	$(CXX) $(CXXFLAGS) $(OFLAGS) -O3 -DNOTCOMPAT $^ -o $@ $(LDFLAGS)
+
 .PHONY: clean all test fmt run
 
 test: bigmaac.so test_bigmaac preload
@@ -60,7 +69,7 @@ test: bigmaac.so test_bigmaac preload
 
 clean:
 	rm -f $(BINARY) output_with_bigmaac output_without_bigmaac
-	rm -fr *.dSYM
+	rm -fr *.dSYM *.o
 
 fmt:
 	clang-format -i *.c *.h
