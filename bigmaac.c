@@ -586,7 +586,8 @@ static int remove_chunk_with_ptr(void* const ptr, void* const new_ptr, const siz
 	if (new_ptr != NULL) {
 		const size_t m = ((n->size) < new_size) ? n->size : new_size;
 		memcpy(new_ptr, n->ptr, m);
-		log_bm("%p <- %p, %ld\n", new_ptr, n->ptr, m);
+		//log_bm("%p <- %p, %ld\n", new_ptr, n->ptr, m);
+		log_bm("realloc Mmap[%p]%zu <-%ld- Heap[%p]%zu\n", new_ptr,new_size, m, n->ptr,n->size);
 	}
 
 	node* head = ptr < base_bigmaac ? _head_fries : _head_bigmaacs;
@@ -734,6 +735,7 @@ void* realloc(void* ptr, size_t size) {
 		if (p != NULL) {
 			memcpy(p, ptr, size);
 			real_free((size_t)ptr);
+			log_bm("realloc Mmap[%p]%zu <- Heap[%p]%zu\n", p,size, ptr, old_size);
 		} else {
 			OOM();
 			return NULL;
