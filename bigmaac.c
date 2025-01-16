@@ -184,14 +184,14 @@ static inline void verify_memory(node* head, int global) {
 	assert(t == size_bigmaac);
 }
 
-static void print_ll(node* head) {
+static __attribute__((__unused__)) void print_ll(node* head) {
 	while (head != NULL) {
 		fprintf(stderr, "%p n=%p, u=%d, p=%p, size=%ld, ptr=%p\n", head, head->next, head->in_use, head->previous, head->size, head->ptr);
 		head = head->next;
 	}
 }
 
-static void print_heap(heap* heap) {
+static __attribute__((__unused__)) void print_heap(heap* heap) {
 	for (int i = 0; i < heap->used; i++) {
 		fprintf(stderr, "parent %d node %d , ptr=%p size=%ld\n", (i - 1) / 2, i, heap->node_array[i]->ptr, heap->node_array[i]->size);
 	}
