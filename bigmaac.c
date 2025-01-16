@@ -115,7 +115,7 @@ static void* (*real_malloc)(size_t) = NULL;
 static void* (*real_calloc)(size_t, size_t) = NULL;
 static void* (*real_free)(size_t) = NULL;
 static void* (*real_realloc)(void*, size_t) = NULL;
-static void* (*real_reallocarray)(void*, size_t, size_t) = NULL;
+//static void* (*real_reallocarray)(void*, size_t, size_t) = NULL;
 
 // GLOBAL vars
 static int active_mmaps = 0;
@@ -442,8 +442,8 @@ static void bigmaac_init(void) {
 	real_free = dlsym(RTLD_NEXT, "free");
 	real_calloc = dlsym(RTLD_NEXT, "calloc");
 	real_realloc = dlsym(RTLD_NEXT, "realloc");
-	real_reallocarray = dlsym(RTLD_NEXT, "reallocarray");
-	if (!real_malloc || !real_free || !real_calloc || !real_realloc || !real_reallocarray) {
+	//real_reallocarray = dlsym(RTLD_NEXT, "reallocarray");
+	if (!real_malloc || !real_free || !real_calloc || !real_realloc/* || !real_reallocarray*/) {
 		fprintf(stderr, "Error in `dlsym`: %s\n", dlerror());
 	}
 	load_state = LOADING_LIBRARY;
